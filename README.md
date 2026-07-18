@@ -52,6 +52,7 @@ Streamlit will build the app and give you a public URL you can share.
 - If a dependency fails to install, try upgrading pip and installing the failing package separately.
 
 ## Resume bullets
-- Implemented a Streamlit-based Crop & Fertilizer Recommendation web app using scikit-learn, CatBoost, and LightGBM to predict optimal crops and fertilizer based on soil and weather features.
-- Built end-to-end pipeline: data preprocessing, model serialization, and an interactive Streamlit UI for recommendations and visualizations.
-- Containerized the app with Docker for reproducible deployment and documented setup with a step-by-step `README.md`.
+- Built and deployed an interactive Streamlit web app on Streamlit Community Cloud that provides real-time crop and fertilizer recommendations from soil (N, P, K, pH, moisture) and environmental inputs.
+- Developed and productionized ensemble ML pipelines (CatBoost, LightGBM, RandomForest base learners with a stacking meta-model), trained, serialized (joblib), and loaded models for low-latency predictions.
+- Containerized the application with Docker for reproducible deployment and documented setup/run steps in README; configured the app for Streamlit Cloud publishing and continuous sharing.
+- Added IoT device integration: lightweight Flask endpoint to accept device status/sample posts and a Device Events Streamlit page to view and attach device samples to recommendations (demo).
