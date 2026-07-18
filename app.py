@@ -24,9 +24,25 @@ st.title("🌱 Crop and Fertilizer Recommendation System")
 st.markdown("#### Get the best crop and fertilizer recommendations based on soil and environmental conditions.")
 
 # Sidebar
-st.sidebar.image("Images/shell.webp", use_container_width=True)
+st.sidebar.image("Images/shell.webp", width=300)
 st.sidebar.header("Navigation")
-page = st.sidebar.radio("Go to", ["Crop Recommendation", "Fertilizer Recommendation"])
+page = st.sidebar.radio("Go to", ["Crop Recommendation", "Fertilizer Recommendation", "Device Events"]) 
+
+# Device events DB helper (small, local SQLite used by device_api.py)
+import sqlite3 as _sqlite3
+DB_PATH_EVENTS = "device_events.db"
+
+def get_recent_device_options(limit=20):
+    try:
+        conn = _sqlite3.connect(DB_PATH_EVENTS)
+        c = conn.cursor()
+        c.execute('SELECT device_id, status, timestamp, payload FROM device_events ORDER BY timestamp DESC LIMIT ?', (limit,))
+        rows = c.fetchall()
+        conn.close()
+        options = [f"{r[2]} | {r[0]} | {r[1]} | {r[3]}" for r in rows]
+        return options, rows
+    except Exception:
+        return [], []
 
 # Crop Recommendation Section
 if page == "Crop Recommendation":
@@ -48,6 +64,43 @@ if page == "Crop Recommendation":
             humidity = st.slider('Humidity (%)', 0, 100, 50, 1)
             ph = st.slider('pH Level', 4.0, 9.0, 6.5, 0.1)
             rainfall = st.slider('Rainfall (mm)', 0, 1000, 500, 1)
+
+    # Quick demo: attach recent device sample (if any)
+    attached_sample = None
+    with st.expander("🔌 Attach Device Sample (Demo)", expanded=False):
+        opts, rows = get_recent_device_options(20)
+        if opts:
+            sel = st.selectbox("Select recent device event", opts, key="device_event_select_crop")
+            # extract payload (last part after the last '|' )
+            try:
+                payload = sel.split('|')[-1].strip()
+            except Exception:
+                payload = None
+            st.write("Payload:", payload)
+            # naive parse for sample_id in payload (supports 'sample_id=123' or json-like)
+            sample_id = None
+            if payload:
+                if 'sample_id' in payload:
+                    # try key=value
+                    if '=' in payload:
+                        parts = [p.strip() for p in payload.split(',')]
+                        for p in parts:
+                            if 'sample_id' in p:
+                                sample_id = p.split('=')[-1].strip().strip('"')
+                                break
+                    else:
+                        # maybe JSON-like
+                        import re
+                        m = re.search(r'"sample_id"\s*[:=]\s*"?(\w+)"?', payload)
+                        if m:
+                            sample_id = m.group(1)
+            if sample_id:
+                st.success(f"Attached sample_id: {sample_id}")
+                attached_sample = sample_id
+            else:
+                st.info("No sample_id found in payload; you can copy payload manually.")
+        else:
+            st.info("No recent device events found.")
 
 
     if st.button("🌱 Get Crop Recommendation"):
@@ -102,6 +155,7 @@ if page == "Crop Recommendation":
                     "Humidity (%)": [humidity],
                     "pH Level": [ph],
                     "Rainfall (mm)": [rainfall],
+                    "Attached Sample": [attached_sample],
                     "Predicted Crop": [final_prediction[0]]  # Store model prediction
                 }
 
